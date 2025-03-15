@@ -1,0 +1,14 @@
+.\ngrok config add-authtoken 2tlfd7RibZZmRqB7jlBhazEpJWn_e5u2qaPveRSQvjEuUJzw
+
+.\ngrok http 5000
+
+  https://af13-156-209-48-102.ngrok-free.app -> http://localhost:5000
+
+
+
+
+ngrok config add-authtoken 2tlfd7RibZZmRqB7jlBhazEpJWn_e5u2qaPveRSQvjEuUJzw
+
+
+
+ https://a943-156-209-48-102.ngrok-free.app -> http://localhost:5000 

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Admin Panel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
+    </header>
+    
+
+    <div class="container">
+        <h2>Generate QR Code</h2>
+        <form method="POST">
+            <input type="text" name="name" placeholder="Enter Name" required>
+            <input type="text" name="id" pattern="\d{4}" title="Enter a 4-digit number" placeholder="Enter 4-Digit ID" required>
+            <button type="submit" class="btn">Generate</button>
+        </form>
+
+        <h2> Data</h2>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                
+                <th>QR Code</th>
+                <th>Actions</th>
+            </tr>
+            {% for record in records %}
+            <tr>
+                <td>{{ record[1] }}</td>
+                <td>{{ record[0] }}</td>
+                
+                <td><img src="{{ url_for('view_qr', id_number=record[1]) }}" alt="QR Code" width="80"></td>
+                <td class="actions">
+                    <button class="edit-btn" onclick="openEditModal('{{ record[0] }}', '{{ record[1] }}')">✏️ Edit</button>
+                    <a href="{{ url_for('delete_record', id_number=record[1]) }}" class="delete" onclick="return confirm('Are you sure?')">🗑️ Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <div class="pagination">
+            {% for i in range(1, total_pages + 1) %}
+                <a href="{{ url_for('index', page=i) }}" class="{% if i == page %}active{% endif %}">{{ i }}</a>
+            {% endfor %}
+        </div>
+
+        <!-- ✨ New Button to Redirect to Templates Page ✨ -->
+        <div class="button-container">
+            <a href="{{ url_for('attendance') }}" class="btn"> Attendance Page</a>
+            <a href="{{ url_for('home') }}" class="btn"> Home Page</a>
+        </div>
+    </div>
+
+    <!-- ✨ Edit Modal ✨ -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditModal()">&times;</span>
+            <h2>Edit Record</h2>
+            <form id="editForm" method="POST">
+                <input type="hidden" id="editId" name="id">
+                <label for="editName">Name:</label>
+                <input type="text" id="editName" name="name" required>
+
+                <label for="editNewId">4-Digit ID:</label>
+                <input type="text" id="editNewId" name="new_id" pattern="\d{4}" title="Must be a 4-digit number" required>
+
+                <button type="submit" class="btn">💾 Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openEditModal(name, id) {
+            document.getElementById('editName').value = name;
+            document.getElementById('editNewId').value = id;
+            document.getElementById('editForm').action = `/edit/${id}`;
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            var modal = document.getElementById('editModal');
+            if (event.target === modal) {
+                closeEditModal();
+            }
+        }
+    </script>
+
+</body>
+</html>

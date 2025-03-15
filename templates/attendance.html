@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الحضور باستخدام QR</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header>
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
+</header>
+    
+<div class="container">
+    <h2>Take Attendance</h2>
+
+    <!-- QR Scanner Section -->
+    <div id="qr-reader"></div>
+    <p><strong>امسح QR Code لتسجيل الحضور تلقائيًا</strong></p>
+
+    <!-- Summary Section -->
+    <div class="summary">
+        <p>إجمالي الأسماء: <span id="totalNames">0</span></p>
+        <p>عدد الحضور: <span id="totalAttendance">0</span></p>
+    </div>
+
+    <button type="button" onclick="exportToExcel()" class="btn">Print Ecxel</button>
+    <button type="button" onclick="resetAttendance()" class="btn btn-danger">Clear</button> <!-- Reset Button -->
+
+    <div class="button-container">
+        <a href="{{ url_for('index') }}" class="btn">Manage QR Code</a>
+        <a href="{{ url_for('home') }}" class="btn"> Home Page</a>
+    </div>
+
+    <!-- Attendance Form -->
+    <form method="POST" action="{{ url_for('mark_attendance') }}">
+        <div>
+            <label for="searchId"><strong>بحث بالـ ID:</strong></label>
+            <input type="text" id="searchId" placeholder="أدخل الـ ID..." oninput="searchById()">
+        </div>
+        <button type="submit">تسجيل الحضور</button>
+        <table id="attendanceTable">
+            <tr>
+                <th>ID</th>
+                <th>الاسم</th>
+                <th>الحضور</th>
+            </tr>
+            
+            {% for id, name, status in records %}
+            <tr id="row-{{ id }}">
+                <td>{{ id }}</td>
+                <td>{{ name }}</td>
+                <td>
+                    <input type="checkbox" name="attendance" value="{{ id }}" id="check-{{ id }}" {% if status %}checked{% endif %} onclick="updateSummary()">
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+    </form>
+</div>
+
+<script>
+    function updateSummary() {
+        let checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        let checkedCount = 0;
+
+        checkboxes.forEach(checkbox => {
+            let row = checkbox.closest("tr");
+            if (checkbox.checked) {
+                row.style.backgroundColor = "#E9C46A";
+                checkedCount++;
+            } else {
+                row.style.backgroundColor = "";
+            }
+        });
+
+        document.getElementById("totalNames").innerText = checkboxes.length;
+        document.getElementById("totalAttendance").innerText = checkedCount;
+    }
+
+    function exportToExcel() {
+        let table = document.getElementById("attendanceTable");
+        let data = [["ID", "الاسم", "التاريخ", "الحضور"]];
+        let today = new Date().toISOString().split('T')[0];
+
+        table.querySelectorAll("tr").forEach((row, index) => {
+            if (index === 0) return; // Skip header row
+            let cells = row.cells;
+            let id = cells[0].innerText;
+            let name = cells[1].innerText;
+            let status = cells[2].querySelector("input[type=checkbox]").checked ? "✔" : "❌";
+            data.push([id, name, today, status]);
+        });
+
+        let ws = XLSX.utils.aoa_to_sheet(data);
+        let wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+        XLSX.writeFile(wb, "attendance_report.xlsx");
+    }
+
+    function onScanSuccess(decodedText) {
+        console.log(`Scanned: ${decodedText}`);
+        
+        let checkBox = document.getElementById(`check-${decodedText}`);
+        if (checkBox) {
+            checkBox.checked = true;
+            document.getElementById(`row-${decodedText}`).style.backgroundColor = "#E9C46A";
+            updateSummary();
+        } else {
+            alert("لم يتم العثور على هذا الـ ID في القائمة!");
+        }
+    }
+
+    let html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 });
+    html5QrcodeScanner.render(onScanSuccess);
+
+    function resetAttendance() {
+        if (!confirm("هل أنت متأكد من إعادة ضبط الحضور؟")) return;
+        
+        // Uncheck all checkboxes in the frontend
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = false;
+            checkbox.closest("tr").style.backgroundColor = "";
+        });
+
+        // Reset summary counts
+        document.getElementById("totalAttendance").innerText = 0;
+
+        // Send request to reset attendance in the database
+        fetch("{{ url_for('reset_attendance') }}", { method: "POST" })
+            .then(response => response.json())
+            .then(data => alert(data.message))
+            .catch(error => console.error("Error:", error));
+    }
+
+    function searchById() {
+        let searchValue = document.getElementById("searchId").value.trim();
+        let rows = document.querySelectorAll("#attendanceTable tr");
+
+        // إزالة التمييز السابق
+        rows.forEach(row => row.classList.remove("highlight"));
+
+        if (!searchValue) return; // إذا كان البحث فارغًا لا تفعل شيء
+
+        let targetRow = document.getElementById(`row-${searchValue}`);
+        
+        if (targetRow) {
+            targetRow.classList.add("highlight"); // تمييز الصف
+            targetRow.scrollIntoView({ behavior: "smooth", block: "center" }); // التمرير للصف المحدد
+        }
+    }
+
+    window.onload = updateSummary;
+</script>
+
+</body>
+</html>
