@@ -9,10 +9,12 @@ import datetime
 app = Flask(__name__)
 
 # Database Connection
-server = 'KTS'
-database = 'Church'
+server = 'Re3aya-dev.my-alphatech.com\MSSQLSERVER2019'
+username = 'Alph_Maria'
+password = 'tp8895Ma#'
+database = 'alphatec_Attendance'
 driver = '{ODBC Driver 17 for SQL Server}'
-conn_str = f'DRIVER={driver};SERVER={server};DATABASE={database};Trusted_Connection=yes;'
+conn_str = f'DRIVER={driver};SERVER={server};DATABASE={database};UID={username};PWD={password}'
 
 # Folder for storing QR codes
 QR_FOLDER = "static/qrcodes"
