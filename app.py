@@ -46,12 +46,12 @@ def index():
             cursor = conn.cursor()
 
             # Check if ID exists
-            cursor.execute("SELECT COUNT(*) FROM dbo.QR WHERE id = ?", (id_number,))
+            cursor.execute("SELECT COUNT(*) FROM QR WHERE id = ?", (id_number,))
             if cursor.fetchone()[0] > 0:
                 return "❌ ID already exists!"
 
             qr_binary = generate_qr(id_number)
-            cursor.execute("INSERT INTO dbo.QR (name, id, qr) VALUES (?, ?, ?)", 
+            cursor.execute("INSERT INTO QR (name, id, qr) VALUES (?, ?, ?)", 
                            (name, int(id_number), pyodbc.Binary(qr_binary)))
             conn.commit()
             conn.close()
@@ -70,10 +70,10 @@ def index():
         conn = pyodbc.connect(conn_str)
         cursor = conn.cursor()
 
-        cursor.execute("SELECT name, id FROM dbo.QR ORDER BY id OFFSET ? ROWS FETCH NEXT ? ROWS ONLY", (offset, limit))
+        cursor.execute("SELECT name, id FROM QR ORDER BY id OFFSET ? ROWS FETCH NEXT ? ROWS ONLY", (offset, limit))
         records = cursor.fetchall()
 
-        cursor.execute("SELECT COUNT(*) FROM dbo.QR")
+        cursor.execute("SELECT COUNT(*) FROM QR")
         total_records = cursor.fetchone()[0]
 
         conn.close()
@@ -147,7 +147,7 @@ def view_qr(id_number):
         conn = pyodbc.connect(conn_str)
         cursor = conn.cursor()
 
-        cursor.execute("SELECT qr FROM dbo.QR WHERE id = ?", (id_number,))
+        cursor.execute("SELECT qr FROM QR WHERE id = ?", (id_number,))
         row = cursor.fetchone()
 
         if row:
@@ -166,10 +166,10 @@ def delete_record(id_number):
         cursor = conn.cursor()
 
         # Step 1: Delete attendance records related to this person
-        cursor.execute("DELETE FROM dbo.Attendance WHERE person_id = ?", (id_number,))
+        cursor.execute("DELETE FROM Attendance WHERE person_id = ?", (id_number,))
         
         # Step 2: Delete the person from the QR table
-        cursor.execute("DELETE FROM dbo.QR WHERE id = ?", (id_number,))
+        cursor.execute("DELETE FROM QR WHERE id = ?", (id_number,))
 
         conn.commit()
         conn.close()
@@ -197,12 +197,12 @@ def edit_record(id_number):
         cursor = conn.cursor()
 
         # Check if new ID already exists
-        cursor.execute("SELECT COUNT(*) FROM dbo.QR WHERE id = ?", (new_id,))
+        cursor.execute("SELECT COUNT(*) FROM QR WHERE id = ?", (new_id,))
         if cursor.fetchone()[0] > 0 and new_id != id_number:
             return "❌ New ID already exists!"
 
         qr_binary = generate_qr(new_id)
-        cursor.execute("UPDATE dbo.QR SET name = ?, id = ?, qr = ? WHERE id = ?", 
+        cursor.execute("UPDATE QR SET name = ?, id = ?, qr = ? WHERE id = ?", 
                        (new_name, int(new_id), pyodbc.Binary(qr_binary), id_number))
         conn.commit()
         conn.close()
@@ -222,7 +222,7 @@ def scan_qr():
     try:
         conn = pyodbc.connect(conn_str)
         cursor = conn.cursor()
-        cursor.execute("SELECT name FROM dbo.QR WHERE id = ?", qr_data)
+        cursor.execute("SELECT name FROM QR WHERE id = ?", qr_data)
         person = cursor.fetchone()
         conn.close()
 
